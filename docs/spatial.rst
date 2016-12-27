@@ -87,6 +87,22 @@ They are preferred over just providing ``latitude, longitude`` because they are
 more intelligent, have a spatial reference system attached & are more consistent
 with GeoDjango's use.
 
+``Polygons``
+------------
+
+Haystack prefers to work with ``Polygon`` objects, which are located in
+``django.contrib.gis.goes.Polygon`` but conveniently importable out of
+``haystack.utils.geo.Point``.
+
+
+``Polygon`` objects use **LONGITUDE, LATITUDE** for their construction, regardless
+if you use the parameters to instantiate them or WKT_/``GEOSGeometry``.
+
+Examples::
+
+  from haystack.utils.geo import Polygon
+  poly = Polygon([ [-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90] ])
+
 
 ``Distance``
 ------------
@@ -129,8 +145,8 @@ appear to be a way to switch this. Haystack will transform all points into this
 coordinate system for you.
 
 
-Indexing
-========
+Indexing Points
+===============
 
 Indexing is relatively simple. Simply add a ``LocationField`` (or several)
 onto your ``SearchIndex`` class(es) & provide them a ``Point`` object. For
@@ -200,8 +216,38 @@ returns a ``Point`` based on those coordinates::
             return Shop
 
 
-Querying
-========
+Indexing Polygons
+=================
+
+Haystack currently only supports Elasticsearch for indexing Polygons.
+Indexing is relatively simple. Simply add a ``ShapeField`` (or several)
+onto your ``SearchIndex`` class(es) & provide them a ``Polygon`` object. For
+example::
+
+      # places/models.py
+      from django.contrib.gis.geos import Polygon
+      from django.contrib.gis.db import models
+
+      class Place(models.Model):
+          # ... the usual, then...
+          bounding_box = PolygonField()
+
+
+      from haystack import indexes
+      from places.models import Place
+
+
+      class PlaceIndex(indexes.SearchIndex, indexes.Indexable):
+          text = indexes.CharField(document=True, use_template=True)
+          # ... the usual, then...
+          area = indexes.ShapeField(model_attr='bounding_box')
+
+          def get_model(self):
+              return Place
+
+
+Querying Points
+===============
 
 There are two types of geospatial queries you can run, ``within`` & ``dwithin``.
 Like their GeoDjango counterparts (within_ & dwithin_), these methods focus on
@@ -348,6 +394,20 @@ position::
     a broad mix of models. Additionally, accessing ``Model`` information is a
     couple hops away, so Haystack favors the explicit (if slightly more typing)
     approach.
+
+
+GeoShape Queries
+================
+
+Haystack currently only supports Elasticsearch for GeoShape queries.
+There are multiple geospatial queries you can run: intersects, disjoint, within,
+and contains (Elasticsearch >= 2.x only).
+
+Examples::
+  sqs = SearchQuerySet()
+  poly = Polygon([ [-180, 90], [180, 90], [180, -90], [-180, -90], [-180, 90] ])
+  # Filter results whose bounding_box attribute is within poly
+  sqs.shape('bounding_box', poly, 'within')
 
 
 Ordering
