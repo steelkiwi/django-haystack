@@ -402,8 +402,14 @@ class SearchQuerySet(object):
         clone.query.add_dwithin(field, point, distance)
         return clone
 
-    def shape(self, field, other_shape, relation='within'):
-        """Spatial: Adds a geo-shape search to the query."""
+    def shape(self, field, other_shape, relation='intersects'):
+        """
+        Spatial: Adds a geo-shape search to the query.
+
+        :param field: str name of field to query on
+        :param other_shape: Polygon object
+        :param relation: str `intersects`, `disjoint`, `within`
+        """
 
         clone = self._clone()
         clone.query.add_shape(field, other_shape, relation)
