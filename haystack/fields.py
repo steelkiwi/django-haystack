@@ -260,7 +260,7 @@ class ShapeField(SearchField):
 
         if value is None:
             return None
-        polygon = ensure_polygon(value)
+        polygon = ensure_polygon(value.buffer(0))
         coords = [[list(x) for x in y] for y in polygon.coords]
         return {'type': 'polygon', 'coordinates': coords}
 
